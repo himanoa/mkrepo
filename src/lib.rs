@@ -1,4 +1,5 @@
 pub mod makerepo {
+    use std::fs::create_dir_all;
     #[derive(Debug)]
     pub enum CommandType<'a> {
         CreateDirectory {
@@ -39,5 +40,10 @@ pub mod makerepo {
             }
             Ok(())
         }
+    }
+
+    pub fn create_directory(path: &str) -> Result<(), ()> {
+        create_dir_all(path)?;
+        Ok(())
     }
 }
