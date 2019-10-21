@@ -42,13 +42,12 @@ pub mod makerepo {
         }
     }
 
-    pub fn create_directory(path: &str) -> Result<(), Error> {
-        create_dir_all(path)?;
-        Ok(())
+    pub fn create_directory(path: &str) -> Result<(), std::io::Error> {
+        create_dir_all(path)
     }
 
     pub fn initialize_git(first_commit_message: &str, path: &str) -> Result<(), Error> {
-        Ok(())
+        unimplemented!()
     }
 
     pub struct DefaultExecutor {}
@@ -67,5 +66,10 @@ pub mod makerepo {
             };
             Ok(())
         }
+    }
+
+    pub struct Config {
+        service: String,
+        name: String,
     }
 }
