@@ -1,8 +1,15 @@
 extern crate failure;
+extern crate toml;
+extern crate serde;
+extern crate serde_derive;
+extern crate envy;
 
 pub mod makerepo {
+    use serde_derive::Deserialize;
+    use envy;
     use failure::Error;
-    use std::fs::create_dir_all;
+    use std::fs::{create_dir_all};
+
     #[derive(Debug)]
     pub enum CommandType<'a> {
         CreateDirectory {
@@ -68,8 +75,19 @@ pub mod makerepo {
         }
     }
 
+    #[derive(Deserialize, Debug)]
     pub struct Config {
         service: String,
-        name: String,
+        name: Option<String>,
+        ghq_root: Option<String>,
+    }
+
+    pub fn load_env_config() -> Result<Config, Error> {
+        let env_config = envy::from_env::<Config>()?;
+        Ok(env_config)
+    }
+
+    pub fn load_git_config() -> Result<Config, Error> {
+        unimplemented!()
     }
 }
