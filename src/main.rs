@@ -16,10 +16,8 @@ fn main() {
         .get_matches();
     let executor = DryRunExecutor::new();
     match executor.execute(vec![CommandType::CreateDirectory {
-        author: "himanoa",
-        repository: "hugo",
-        hosting_service: "foobar",
-    }, CommandType::InitializeGit { first_commit_message: "Initial commit" }]) {
+        path: "himanoa"
+    }, CommandType::InitializeGit { first_commit_message: "Initial commit", path: "himanoa" }]) {
         Ok(()) => (),
         Err(_) => ()
     };
