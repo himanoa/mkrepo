@@ -2,13 +2,11 @@ extern crate failure;
 extern crate toml;
 extern crate serde;
 extern crate serde_derive;
-extern crate envy;
 
 pub mod makerepo {
     use serde_derive::Deserialize;
-    use envy;
     use failure::Error;
-    use std::fs::{create_dir_all};
+    use std::fs::{create_dir_all, read_to_string};
 
     #[derive(Debug)]
     pub enum CommandType<'a> {
@@ -82,12 +80,25 @@ pub mod makerepo {
         ghq_root: Option<String>,
     }
 
-    pub fn load_env_config() -> Result<Config, Error> {
-        let env_config = envy::from_env::<Config>()?;
-        Ok(env_config)
+    #[derive(Deserialize, Debug)]
+    struct GitConfig {
+        mkrepo: MkrepoConfig
+    }
+
+    #[derive(Deserialize, Debug)]
+    struct MkrepoConfig {
+        service: String,
+        name: String,
+        root: String
     }
 
     pub fn load_git_config() -> Result<Config, Error> {
-        unimplemented!()
+        let git_config = read_to_string("~/.gitconfig")?;
+        let config: GitConfig = toml::from_str(&git_config).unwrap();
+        Ok(Config {
+            service: config.mkrepo.service,
+            name: Some(config.mkrepo.name),
+            ghq_root: Some(config.mkrepo.root),
+        })
     }
 }
