@@ -1,21 +1,21 @@
 extern crate failure;
-extern crate toml;
 extern crate serde;
 extern crate serde_derive;
+extern crate toml;
 
 pub mod makerepo {
-    use serde_derive::Deserialize;
     use failure::Error;
+    use serde_derive::Deserialize;
     use std::fs::{create_dir_all, read_to_string};
 
     #[derive(Debug, PartialEq)]
     pub enum CommandType<'a> {
         CreateDirectory {
-            path: &'a str
+            path: &'a str,
         },
         InitializeGit {
             first_commit_message: &'a str,
-            path: &'a str
+            path: &'a str,
         },
     }
 
@@ -35,11 +35,10 @@ pub mod makerepo {
         fn execute(&self, commands: Vec<CommandType>) -> Result<(), Error> {
             for command in commands {
                 match command {
-                    CommandType::CreateDirectory {
-                        path
-                    } => println!("CreateDirectory: {}", path),
+                    CommandType::CreateDirectory { path } => println!("CreateDirectory: {}", path),
                     CommandType::InitializeGit {
-                        first_commit_message, path
+                        first_commit_message,
+                        path,
                     } => println!("InitializeGit {} {}", first_commit_message, path),
                 }
             }
@@ -57,18 +56,17 @@ pub mod makerepo {
 
     pub struct DefaultExecutor {}
 
-    impl Executor for DefaultExecutor  {
+    impl Executor for DefaultExecutor {
         fn execute(&self, commands: Vec<CommandType>) -> Result<(), Error> {
             for command in commands {
                 match command {
-                    CommandType::CreateDirectory {
-                        path
-                    } => create_directory(path)?,
+                    CommandType::CreateDirectory { path } => create_directory(path)?,
                     CommandType::InitializeGit {
-                        first_commit_message, path
-                    } => initialize_git(first_commit_message, path)?
+                        first_commit_message,
+                        path,
+                    } => initialize_git(first_commit_message, path)?,
                 };
-            };
+            }
             Ok(())
         }
     }
@@ -82,14 +80,14 @@ pub mod makerepo {
 
     #[derive(Deserialize, Debug)]
     struct GitConfig {
-        mkrepo: MkrepoConfig
+        mkrepo: MkrepoConfig,
     }
 
     #[derive(Deserialize, Debug)]
     struct MkrepoConfig {
         service: String,
         name: String,
-        root: String
+        root: String,
     }
 
     pub fn load_git_config() -> Result<Config, Error> {
@@ -107,7 +105,7 @@ pub mod makerepo {
         name: Option<&str>,
         service_name: Option<&str>,
         repository_name: &str,
-        first_commit_message: Option<&str>
+        first_commit_message: Option<&str>,
     ) -> Vec<CommandType<'a>> {
         unimplemented!()
     }
@@ -120,14 +118,20 @@ pub mod makerepo {
             let c = Config {
                 service: "github.com".to_string(),
                 name: Some("himanoa".to_string()),
-                ghq_root: Some("~/src".to_string())
+                ghq_root: Some("~/src".to_string()),
             };
-            assert_eq!(build_commands(c, None, None, "mkrepo", Some("Initial commit")), vec![CommandType::CreateDirectory {
-                path: "~/src/github.com/himanoa/mkrepo"
-            }, CommandType::InitializeGit {
-                first_commit_message: "Initial commit",
-                path: "~/src/github.com/himanoa/mkrepo"
-            }]);
+            assert_eq!(
+                build_commands(c, None, None, "mkrepo", Some("Initial commit")),
+                vec![
+                    CommandType::CreateDirectory {
+                        path: "~/src/github.com/himanoa/mkrepo"
+                    },
+                    CommandType::InitializeGit {
+                        first_commit_message: "Initial commit",
+                        path: "~/src/github.com/himanoa/mkrepo"
+                    }
+                ]
+            );
         }
     }
 }

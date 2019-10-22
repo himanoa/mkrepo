@@ -15,10 +15,14 @@ fn main() {
         )
         .get_matches();
     let executor = DryRunExecutor::new();
-    match executor.execute(vec![CommandType::CreateDirectory {
-        path: "himanoa"
-    }, CommandType::InitializeGit { first_commit_message: "Initial commit", path: "himanoa" }]) {
+    match executor.execute(vec![
+        CommandType::CreateDirectory { path: "himanoa" },
+        CommandType::InitializeGit {
+            first_commit_message: "Initial commit",
+            path: "himanoa",
+        },
+    ]) {
         Ok(()) => (),
-        Err(_) => ()
+        Err(_) => (),
     };
 }
