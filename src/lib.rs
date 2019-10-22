@@ -8,6 +8,7 @@ pub mod makerepo {
     use serde_derive::Deserialize;
     use std::fs::{create_dir_all, read_to_string};
     use std::path::Path;
+    use std::process::Command;
 
     #[derive(Debug, PartialEq)]
     pub enum CommandType {
@@ -52,7 +53,11 @@ pub mod makerepo {
     }
 
     pub fn initialize_git(first_commit_message: &str, path: &str) -> Result<(), Error> {
-        unimplemented!()
+        Command::new("git").arg("init").current_dir(path).output()?;
+        Command::new("git")
+            .args(&["commit", first_commit_message])
+            .output();
+        Ok(())
     }
 
     pub struct DefaultExecutor {}
