@@ -7,15 +7,16 @@ pub mod makerepo {
     use failure::Error;
     use serde_derive::Deserialize;
     use std::fs::{create_dir_all, read_to_string};
+    use std::path::Path;
 
     #[derive(Debug, PartialEq)]
-    pub enum CommandType<'a> {
+    pub enum CommandType {
         CreateDirectory {
-            path: &'a str,
+            path: String,
         },
         InitializeGit {
-            first_commit_message: &'a str,
-            path: &'a str,
+            first_commit_message: String,
+            path: String,
         },
     }
 
@@ -60,11 +61,11 @@ pub mod makerepo {
         fn execute(&self, commands: Vec<CommandType>) -> Result<(), Error> {
             for command in commands {
                 match command {
-                    CommandType::CreateDirectory { path } => create_directory(path)?,
+                    CommandType::CreateDirectory { path } => create_directory(&path)?,
                     CommandType::InitializeGit {
                         first_commit_message,
                         path,
-                    } => initialize_git(first_commit_message, path)?,
+                    } => initialize_git(&first_commit_message, &path)?,
                 };
             }
             Ok(())
@@ -102,12 +103,35 @@ pub mod makerepo {
 
     pub fn build_commands<'a>(
         config: Config,
-        name: Option<&str>,
-        service_name: Option<&str>,
-        repository_name: &str,
-        first_commit_message: Option<&str>,
-    ) -> Vec<CommandType<'a>> {
-        unimplemented!()
+        author: Option<&'a str>,
+        service_name: Option<&'a str>,
+        repository_name: &'a str,
+        first_commit_message: Option<&'a str>,
+    ) -> Result<std::vec::Vec<CommandType>, Error> {
+        let parent_path = config.ghq_root.unwrap();
+        let config_authro_name = config.name.unwrap();
+        let service = match service_name {
+            Some(n) => n,
+            None => config.service.as_ref(),
+        };
+        let repository_author = match author {
+            Some(n) => n,
+            None => config_authro_name.as_ref(),
+        };
+        let repository_path = Path::new(&parent_path)
+            .join(service)
+            .join(repository_author)
+            .join(repository_name);
+
+        Ok(vec![
+            CommandType::CreateDirectory {
+                path: String::from(repository_path.to_str().unwrap()),
+            },
+            CommandType::InitializeGit {
+                path: String::from(repository_path.to_str().unwrap()),
+                first_commit_message: String::from(first_commit_message.unwrap()),
+            },
+        ])
     }
 
     #[cfg(test)]
@@ -121,14 +145,14 @@ pub mod makerepo {
                 ghq_root: Some("~/src".to_string()),
             };
             assert_eq!(
-                build_commands(c, None, None, "mkrepo", Some("Initial commit")),
+                build_commands(c, None, None, "mkrepo", Some("Initial commit")).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
-                        path: "~/src/github.com/himanoa/mkrepo"
+                        path: String::from("~/src/github.com/himanoa/mkrepo")
                     },
                     CommandType::InitializeGit {
-                        first_commit_message: "Initial commit",
-                        path: "~/src/github.com/himanoa/mkrepo"
+                        first_commit_message: String::from("Initial commit"),
+                        path: String::from("~/src/github.com/himanoa/mkrepo")
                     }
                 ]
             );
