@@ -8,7 +8,7 @@ pub mod makerepo {
     use failure::Error;
     use std::fs::{create_dir_all, read_to_string};
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum CommandType<'a> {
         CreateDirectory {
             path: &'a str
@@ -100,5 +100,28 @@ pub mod makerepo {
             name: Some(config.mkrepo.name),
             ghq_root: Some(config.mkrepo.root),
         })
+    }
+
+    pub fn build_commands<'a>(config: Config, name: Option<&str>, service_name: Option<&str>, repository_name: &str, first_commit_message: Option<&str>) -> Vec<CommandType<'a>> {
+        unimplemented!()
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        #[test]
+        pub fn build_commands_return_to_create_directory_and_initialize_git() {
+            let c = Config {
+                service: "github.com".to_string(),
+                name: Some("himanoa".to_string()),
+                ghq_root: Some("~/src".to_string())
+            };
+            assert_eq!(build_commands(c, None, None, "mkrepo", Some("Initial commit")), vec![CommandType::CreateDirectory {
+                path: "~/src/github.com/himanoa/mkrepo"
+            }, CommandType::InitializeGit {
+                first_commit_message: "Initial commit",
+                path: "~/src/github.com/himanoa/mkrepo"
+            }]);
+        }
     }
 }
