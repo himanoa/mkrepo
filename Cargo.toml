@@ -1,14 +1,17 @@
 [package]
-name = "mkrepo"
-version = "0.1.0"
 authors = ["himanoa <matsunoappy@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
+name = "mkrepo"
+version = "0.1.0"
 [dependencies]
 clap = "2.33.0"
+envy = "0.4.0"
 failure = "0.1.5"
+gitconfig = "*"
+serde = "1.0.101"
+serde_derive = "1.0.101"
+toml = "0.5.3"
+= "0.1.5"
 serde = "1.0.101"
 serde_derive = "1.0.101"
 toml = "0.5.3"
