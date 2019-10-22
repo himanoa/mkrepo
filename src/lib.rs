@@ -1,12 +1,14 @@
 extern crate failure;
+extern crate gitconfig;
 extern crate serde;
 extern crate serde_derive;
 extern crate toml;
 
 pub mod makerepo {
-    use failure::Error;
+    use failure::{Error, Fail};
+    use gitconfig::Value;
     use serde_derive::Deserialize;
-    use std::fs::{create_dir_all, read_to_string};
+    use std::fs::create_dir_all;
     use std::path::Path;
     use std::process::Command;
 
@@ -84,26 +86,51 @@ pub mod makerepo {
         ghq_root: Option<String>,
     }
 
-    #[derive(Deserialize, Debug)]
-    struct GitConfig {
-        mkrepo: MkrepoConfig,
+    #[derive(Debug, Fail)]
+    pub enum FailLoadGitConfigError {
+        #[fail(display = "fail git config --list --null stdout parse")]
+        ParseError,
+        #[fail(display = "fail git command execute error")]
+        FailGitCommandExecuteError,
+        #[fail(display = "Not found default service setting")]
+        NotFoundDefaultServiceSetting,
     }
-
-    #[derive(Deserialize, Debug)]
-    struct MkrepoConfig {
-        service: String,
-        name: String,
-        root: String,
-    }
-
-    pub fn load_git_config() -> Result<Config, Error> {
-        let git_config = read_to_string("~/.gitconfig")?;
-        let config: GitConfig = toml::from_str(&git_config).unwrap();
-        Ok(Config {
-            service: config.mkrepo.service,
-            name: Some(config.mkrepo.name),
-            ghq_root: Some(config.mkrepo.root),
-        })
+    pub fn load_git_config() -> Result<Config, FailLoadGitConfigError> {
+        let command = Command::new("git")
+            .args(&["config", "--list", "--null"])
+            .output()
+            .unwrap();
+        let output = std::str::from_utf8(&command.stdout)
+            .map_err(|_| FailLoadGitConfigError::FailGitCommandExecuteError)?;
+        if let Some(git_config_map) = output.to_string().parse::<Value>().unwrap().as_object() {
+            println!("{:?}", git_config_map);
+            match git_config_map.get("mkrepo") {
+                Some(Value::Object(mkrepo)) => match mkrepo.get("service") {
+                    Some(Value::String(service)) => Ok(Config {
+                        service: service.to_string(),
+                        name: match git_config_map.get("user.name") {
+                            Some(Value::String(n)) => Some(n.to_string()),
+                            _ => None,
+                        },
+                        ghq_root: match git_config_map.get("ghq.root") {
+                            Some(Value::String(n)) => Some(n.to_string()),
+                            _ => None,
+                        },
+                    }),
+                    Some(Value::Object(_)) => {
+                        println!("foobar");
+                        Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting {})
+                    }
+                    None => {
+                        println!("foobar");
+                        Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting {})
+                    }
+                },
+                _ => Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting {}),
+            }
+        } else {
+            Err(FailLoadGitConfigError::ParseError {})
+        }
     }
 
     pub fn build_commands<'a>(
