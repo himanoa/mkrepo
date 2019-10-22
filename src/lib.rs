@@ -108,7 +108,7 @@ pub mod makerepo {
         service_name: Option<&str>,
         repository_name: &str,
         first_commit_message: Option<&str>
-        ) -> Vec<CommandType<'a>> {
+    ) -> Vec<CommandType<'a>> {
         unimplemented!()
     }
 
