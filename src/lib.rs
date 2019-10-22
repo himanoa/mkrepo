@@ -102,7 +102,13 @@ pub mod makerepo {
         })
     }
 
-    pub fn build_commands<'a>(config: Config, name: Option<&str>, service_name: Option<&str>, repository_name: &str, first_commit_message: Option<&str>) -> Vec<CommandType<'a>> {
+    pub fn build_commands<'a>(
+        config: Config,
+        name: Option<&str>,
+        service_name: Option<&str>,
+        repository_name: &str,
+        first_commit_message: Option<&str>
+        ) -> Vec<CommandType<'a>> {
         unimplemented!()
     }
 
