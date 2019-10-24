@@ -9,6 +9,9 @@ repository = "https://github.com/himanoa/mkrepo"
 keywords = ["cli", "ghq"]
 categories = ["command-line-utilities"]
 readme="README.md"
+[[bin]]
+name = "mkrepo"
+path = "src/main.rs"
 [dependencies]
 clap = "2.33.0"
 envy = "0.4.0"
