@@ -1,7 +1,7 @@
 extern crate clap;
 use clap::{App, Arg};
 mod lib;
-use lib::makerepo::{build_commands, load_git_config, CommandType, DryRunExecutor, Executor};
+use lib::makerepo::{build_commands, load_git_config, DefaultExecutor, DryRunExecutor, Executor};
 
 const VERSION: &'static str = "0.0.1";
 fn main() {
@@ -33,6 +33,12 @@ fn main() {
                 .required(false)
                 .short("m"),
         )
+        .arg(
+            Arg::with_name("dry_run")
+                .help("dru run")
+                .required(false)
+                .short("d"),
+        )
         .get_matches();
     let config = match load_git_config() {
         Ok(g) => g,
@@ -50,14 +56,25 @@ fn main() {
         matchers.value_of("first_commit_message"),
     ) {
         Ok(commands) => {
-            let executor = DryRunExecutor::new();
-            match executor.execute(commands) {
-                Ok(()) => (),
-                Err(e) => {
-                    eprintln!("{}", e);
-                    panic!()
-                }
-            };
+            if let Some(_) = matchers.value_of("dry_run") {
+                let executor = DryRunExecutor::new();
+                match executor.execute(commands) {
+                    Ok(()) => (),
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        panic!()
+                    }
+                };
+            } else {
+                let executor = DefaultExecutor::new();
+                match executor.execute(commands) {
+                    Ok(()) => (),
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        panic!()
+                    }
+                };
+            }
         }
         Err(e) => {
             eprintln!("{}", e);

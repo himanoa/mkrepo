@@ -64,6 +64,12 @@ pub mod makerepo {
 
     pub struct DefaultExecutor {}
 
+    impl DefaultExecutor {
+        pub fn new() -> DefaultExecutor {
+            DefaultExecutor {}
+        }
+    }
+
     impl Executor for DefaultExecutor {
         fn execute(&self, commands: Vec<CommandType>) -> Result<(), Error> {
             for command in commands {
