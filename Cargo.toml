@@ -9,6 +9,7 @@ repository = "https://github.com/himanoa/mkrepo"
 keywords = ["cli", "ghq"]
 categories = ["command-line-utilities"]
 readme="README.md"
+description = "Create repository directory for ghq style"
 [[bin]]
 name = "mkrepo"
 path = "src/main.rs"
