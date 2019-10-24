@@ -3,6 +3,12 @@ authors = ["himanoa <matsunoappy@gmail.com>"]
 edition = "2018"
 name = "mkrepo"
 version = "0.1.0"
+license = "MIT"
+homepage = "https://github.com/himanoa/mkrepo"
+repository = "https://github.com/himanoa/mkrepo"
+keywords = ["cli", "ghq"]
+categories = ["command-line-utilities"]
+readme="README.md"
 [dependencies]
 clap = "2.33.0"
 envy = "0.4.0"
