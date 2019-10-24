@@ -24,7 +24,7 @@ pub mod makerepo {
     }
 
     pub trait Executor {
-        fn execute(&self, commands: Vec<CommandType>) -> Result<(), Error>;
+        fn execute(&self, commands: Vec<CommandType>) -> Result<(), ExecutorError>;
     }
 
     pub struct DryRunExecutor {}
@@ -36,7 +36,7 @@ pub mod makerepo {
     }
 
     impl Executor for DryRunExecutor {
-        fn execute(&self, commands: Vec<CommandType>) -> Result<(), Error> {
+        fn execute(&self, commands: Vec<CommandType>) -> Result<(), ExecutorError> {
             for command in commands {
                 match command {
                     CommandType::CreateDirectory { path } => println!("CreateDirectory: {}", path),
@@ -54,13 +54,31 @@ pub mod makerepo {
         create_dir_all(path)
     }
 
-    pub fn initialize_git(first_commit_message: &str, path: &str) -> Result<(), Error> {
-        Command::new("git").arg("init").current_dir(path).output()?;
-        Command::new("git")
-            .args(&["commit", "-m", first_commit_message])
+    #[derive(Debug, Fail)]
+    pub enum GitError {
+        #[fail(display = "fail git repository initialize")]
+        Initialize,
+    }
+
+    impl From<std::io::Error> for GitError {
+        fn from(_: std::io::Error) -> GitError {
+            GitError::Initialize {}
+        }
+    }
+
+    pub fn initialize_git(first_commit_message: &str, path: &str) -> Result<(), GitError> {
+        let create_dir_result = Command::new("git").arg("init").current_dir(path).output()?;
+        let initial_commit_result = Command::new("git")
+            .args(&["commit", "-m", first_commit_message, "--allow-empty"])
             .current_dir(path)
             .output()?;
-        Ok(())
+        match (
+            create_dir_result.status.success(),
+            initial_commit_result.status.success(),
+        ) {
+            (true, true) => Ok(()),
+            _ => Err(GitError::Initialize {}),
+        }
     }
 
     pub struct DefaultExecutor {}
@@ -71,18 +89,38 @@ pub mod makerepo {
         }
     }
 
+    #[derive(Debug, Fail)]
+    pub enum ExecutorError {
+        #[fail(display = "fail create directory")]
+        CreateDirectroyError,
+        #[fail(display = "fail initialize git repository")]
+        GitInitializeError,
+    }
     impl Executor for DefaultExecutor {
-        fn execute(&self, commands: Vec<CommandType>) -> Result<(), Error> {
-            for command in commands {
-                match command {
-                    CommandType::CreateDirectory { path } => create_directory(&path)?,
+        fn execute(&self, commands: Vec<CommandType>) -> Result<(), ExecutorError> {
+            let error = commands.into_iter().find_map(|command| {
+                let result = match command {
+                    CommandType::CreateDirectory { path } => {
+                        create_directory(&path).map_err(|_| ExecutorError::CreateDirectroyError {})
+                    }
                     CommandType::InitializeGit {
                         first_commit_message,
                         path,
-                    } => initialize_git(&first_commit_message, &path)?,
+                    } => initialize_git(&first_commit_message, &path)
+                        .map_err(|_| ExecutorError::GitInitializeError {}),
                 };
+                match result.is_err() {
+                    true => Some(result),
+                    false => None,
+                }
+            });
+            match error {
+                None => Ok(()),
+                Some(e) => match e {
+                    Err(e) => Err(e),
+                    _ => Ok(()),
+                },
             }
-            Ok(())
         }
     }
 
