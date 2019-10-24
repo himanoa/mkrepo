@@ -43,7 +43,7 @@ pub mod makerepo {
                     CommandType::InitializeGit {
                         first_commit_message,
                         path,
-                    } => println!("InitializeGit {} {}", first_commit_message, path),
+                    } => println!("InitializeGit: {} {}", first_commit_message, path),
                 }
             }
             Ok(())
@@ -103,22 +103,26 @@ pub mod makerepo {
         let output = std::str::from_utf8(&command.stdout)
             .map_err(|_| FailLoadGitConfigError::FailGitCommandExecuteError)?;
         if let Some(git_config_map) = output.to_string().parse::<Value>().unwrap().as_object() {
-            println!("{:?}", git_config_map);
             match git_config_map.get("mkrepo") {
                 Some(Value::Object(mkrepo)) => match mkrepo.get("service") {
                     Some(Value::String(service)) => Ok(Config {
                         service: service.to_string(),
-                        name: match git_config_map.get("user.name") {
-                            Some(Value::String(n)) => Some(n.to_string()),
+                        name: match git_config_map.get("user") {
+                            Some(Value::Object(u)) => match u.get("name") {
+                                Some(Value::String(name)) => Some(name.to_string()),
+                                _ => None,
+                            },
                             _ => None,
                         },
-                        ghq_root: match git_config_map.get("ghq.root") {
-                            Some(Value::String(n)) => Some(n.to_string()),
+                        ghq_root: match git_config_map.get("ghq") {
+                            Some(Value::Object(g)) => match g.get("root") {
+                                Some(Value::String(root)) => Some(root.to_string()),
+                                _ => None,
+                            },
                             _ => None,
                         },
                     }),
                     Some(Value::Object(_)) => {
-                        println!("foobar");
                         Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting {})
                     }
                     None => {
