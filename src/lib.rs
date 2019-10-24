@@ -58,6 +58,8 @@ pub mod makerepo {
     pub enum GitError {
         #[fail(display = "fail git repository initialize")]
         Initialize,
+        #[fail(display = "git repository already exist")]
+        AlreadyExist,
     }
 
     impl From<std::io::Error> for GitError {
@@ -67,6 +69,13 @@ pub mod makerepo {
     }
 
     pub fn initialize_git(first_commit_message: &str, path: &str) -> Result<(), GitError> {
+        let git_status_result = Command::new("git")
+            .arg("status")
+            .current_dir(path)
+            .output()?;
+        if git_status_result.status.success() {
+            return Err(GitError::AlreadyExist {});
+        }
         let create_dir_result = Command::new("git").arg("init").current_dir(path).output()?;
         let initial_commit_result = Command::new("git")
             .args(&["commit", "-m", first_commit_message, "--allow-empty"])
