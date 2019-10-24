@@ -58,6 +58,7 @@ pub mod makerepo {
         Command::new("git").arg("init").current_dir(path).output()?;
         Command::new("git")
             .args(&["commit", "-m", first_commit_message])
+            .current_dir(path)
             .output()?;
         Ok(())
     }

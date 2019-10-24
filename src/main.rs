@@ -18,6 +18,7 @@ fn main() {
                 .help("repository author name")
                 .required(false)
                 .short("a")
+                .takes_value(true)
                 .long("author"),
         )
         .arg(
@@ -25,12 +26,14 @@ fn main() {
                 .help("service name")
                 .required(false)
                 .short("s")
+                .takes_value(true)
                 .long("service"),
         )
         .arg(
             Arg::with_name("first_commit_message")
                 .help("first_commit_message name")
                 .required(false)
+                .takes_value(true)
                 .short("m"),
         )
         .arg(
