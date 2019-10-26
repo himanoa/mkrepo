@@ -46,7 +46,7 @@ $ ls -al ~/src/example.com/himanoa/sample-repository
 #### Overwrite first commit message
 
 ```
-$ mkrepo sample-repository
+$ mkrepo -m "Custom initial commit message" sample-repository
 $ cd ~/src/github.com/himanoa/sample-repository
 $ git show
 
