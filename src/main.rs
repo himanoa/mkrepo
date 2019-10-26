@@ -5,10 +5,9 @@ use mkrepo::makerepo::{
 };
 use std::process::exit;
 
-const VERSION: &'static str = "0.0.1";
 fn main() {
     let matchers = App::new("Make project directory for ghq style.")
-        .version(VERSION)
+        .version(env!("CARGO_PKG_VERSION"))
         .arg(
             Arg::with_name("repository")
                 .help("Repository name")
