@@ -1,7 +1,8 @@
 extern crate clap;
 use clap::{App, Arg};
-mod lib;
-use lib::makerepo::{build_commands, load_git_config, DefaultExecutor, DryRunExecutor, Executor};
+use mkrepo::makerepo::{
+    build_commands, load_git_config, DefaultExecutor, DryRunExecutor, Executor,
+};
 use std::process::exit;
 
 const VERSION: &'static str = "0.0.1";
