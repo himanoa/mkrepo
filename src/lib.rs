@@ -243,22 +243,25 @@ pub mod makerepo {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        use std::path;
+
         #[test]
         pub fn build_commands_return_to_create_directory_and_initialize_git() {
             let c = Config {
                 service: "github.com".to_string(),
                 name: Some("himanoa".to_string()),
-                ghq_root: Some("/home/user/src".into()),
+                ghq_root: Some(normalize_seps("/home/user/src").into()),
             };
             assert_eq!(
                 build_commands(c, None, None, "mkrepo", Some("Initial commit")).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
-                        path: String::from("/home/user/src/github.com/himanoa/mkrepo")
+                        path: normalize_seps("/home/user/src/github.com/himanoa/mkrepo")
                     },
                     CommandType::InitializeGit {
                         first_commit_message: String::from("Initial commit"),
-                        path: String::from("/home/user/src/github.com/himanoa/mkrepo")
+                        path: normalize_seps("/home/user/src/github.com/himanoa/mkrepo")
                     }
                 ]
             );
@@ -270,17 +273,17 @@ pub mod makerepo {
             let c = Config {
                 service: "github.com".to_string(),
                 name: Some("himanoa".to_string()),
-                ghq_root: Some("/home/user/src".into()),
+                ghq_root: Some(normalize_seps("/home/user/src").into()),
             };
             assert_eq!(
                 build_commands(c, None, None, "mkrepo", None).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
-                        path: String::from("/home/user/src/github.com/himanoa/mkrepo")
+                        path: normalize_seps("/home/user/src/github.com/himanoa/mkrepo")
                     },
                     CommandType::InitializeGit {
                         first_commit_message: String::from("Initial commit"),
-                        path: String::from("/home/user/src/github.com/himanoa/mkrepo")
+                        path: normalize_seps("/home/user/src/github.com/himanoa/mkrepo")
                     }
                 ]
             );
@@ -291,40 +294,46 @@ pub mod makerepo {
             let c = Config {
                 service: "github.com".to_string(),
                 name: Some("himanoa".to_string()),
-                ghq_root: Some("/home/user/src".into()),
+                ghq_root: Some(normalize_seps("/home/user/src").into()),
             };
             assert_eq!(
                 build_commands(c, Some("h1manoa"), None, "mkrepo", None).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
-                        path: String::from("/home/user/src/github.com/h1manoa/mkrepo")
+                        path: normalize_seps("/home/user/src/github.com/h1manoa/mkrepo")
                     },
                     CommandType::InitializeGit {
                         first_commit_message: String::from("Initial commit"),
-                        path: String::from("/home/user/src/github.com/h1manoa/mkrepo")
+                        path: normalize_seps("/home/user/src/github.com/h1manoa/mkrepo")
                     }
                 ]
             );
         }
-    }
-    #[test]
-    pub fn build_commands_return_to_create_directory_and_initialize_git_when_service_is_exist() {
-        let c = Config {
-            service: "github.com".to_string(),
-            name: Some("himanoa".to_string()),
-            ghq_root: Some("/home/user/src".into()),
-        };
-        assert_eq!(
-            build_commands(c, None, Some("bitbucket.com"), "mkrepo", None).unwrap(),
-            vec![
-                CommandType::CreateDirectory {
-                    path: String::from("/home/user/src/bitbucket.com/himanoa/mkrepo")
-                },
-                CommandType::InitializeGit {
-                    first_commit_message: String::from("Initial commit"),
-                    path: String::from("/home/user/src/bitbucket.com/himanoa/mkrepo")
-                }
-            ]
-        );
+
+        #[test]
+        pub fn build_commands_return_to_create_directory_and_initialize_git_when_service_is_exist()
+        {
+            let c = Config {
+                service: "github.com".to_string(),
+                name: Some("himanoa".to_string()),
+                ghq_root: Some(normalize_seps("/home/user/src").into()),
+            };
+            assert_eq!(
+                build_commands(c, None, Some("bitbucket.com"), "mkrepo", None).unwrap(),
+                vec![
+                    CommandType::CreateDirectory {
+                        path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
+                    },
+                    CommandType::InitializeGit {
+                        first_commit_message: String::from("Initial commit"),
+                        path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
+                    }
+                ]
+            );
+        }
+
+        fn normalize_seps(path: &str) -> String {
+            path.replace(path::is_separator, &path::MAIN_SEPARATOR.to_string())
+        }
     }
 }
