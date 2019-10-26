@@ -1,4 +1,3 @@
-extern crate clap;
 use clap::{App, Arg};
 use mkrepo::makerepo::{
     build_commands, load_git_config, DefaultExecutor, DryRunExecutor, Executor,

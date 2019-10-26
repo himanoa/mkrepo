@@ -1,9 +1,3 @@
-extern crate failure;
-extern crate gitconfig;
-extern crate serde;
-extern crate serde_derive;
-extern crate toml;
-
 pub mod makerepo {
     use failure::{Error, Fail};
     use gitconfig::Value;
