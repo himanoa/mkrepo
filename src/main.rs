@@ -60,7 +60,7 @@ fn main() {
         matchers.value_of("first_commit_message"),
     ) {
         Ok(commands) => {
-            if let Some(_) = matchers.value_of("dry_run") {
+            if matchers.is_present("dry_run") {
                 let executor = DryRunExecutor::new();
                 match executor.execute(commands) {
                     Ok(()) => (),

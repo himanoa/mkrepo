@@ -27,11 +27,12 @@ pub mod makerepo {
         fn execute(&self, commands: Vec<CommandType>) -> Result<(), ExecutorError>;
     }
 
+    #[derive(Debug, Default)]
     pub struct DryRunExecutor {}
 
     impl DryRunExecutor {
         pub fn new() -> DryRunExecutor {
-            DryRunExecutor {}
+            Self::default()
         }
     }
 
@@ -90,11 +91,12 @@ pub mod makerepo {
         }
     }
 
+    #[derive(Debug, Default)]
     pub struct DefaultExecutor {}
 
     impl DefaultExecutor {
         pub fn new() -> DefaultExecutor {
-            DefaultExecutor {}
+            Self::default()
         }
     }
 
@@ -118,9 +120,10 @@ pub mod makerepo {
                     } => initialize_git(&first_commit_message, &path)
                         .map_err(|_| ExecutorError::GitInitializeError {}),
                 };
-                match result.is_err() {
-                    true => Some(result),
-                    false => None,
+                if result.is_err() {
+                    Some(result)
+                } else {
+                    None
                 }
             });
             match error {
