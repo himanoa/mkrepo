@@ -3,15 +3,36 @@ name: Rust
 on: [push]
 
 jobs:
-  build:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: rust-toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.toolchain }}
+        default: true
+
+    - name: rustup component add
+      run: rustup component add clippy
+
     - name: Lint
-      run: cargo clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --verbose --all --all-targets --all-features -- -D warnings
+
     - name: Build
-      run: cargo build --verbose
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --verbose --all --all-targets --all-features
+
     - name: Run tests
-      run: cargo test --verbose
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --verbose --all --all-targets --all-features
