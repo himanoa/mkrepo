@@ -1,15 +1,9 @@
-extern crate failure;
-extern crate gitconfig;
-extern crate serde;
-extern crate serde_derive;
-extern crate toml;
-
 pub mod makerepo {
     use failure::{Error, Fail};
     use gitconfig::Value;
     use serde_derive::Deserialize;
     use std::fs::create_dir_all;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
     use std::process::Command;
 
     #[derive(Debug, PartialEq)]
@@ -27,11 +21,12 @@ pub mod makerepo {
         fn execute(&self, commands: Vec<CommandType>) -> Result<(), ExecutorError>;
     }
 
+    #[derive(Debug, Default)]
     pub struct DryRunExecutor {}
 
     impl DryRunExecutor {
         pub fn new() -> DryRunExecutor {
-            DryRunExecutor {}
+            Self::default()
         }
     }
 
@@ -90,11 +85,12 @@ pub mod makerepo {
         }
     }
 
+    #[derive(Debug, Default)]
     pub struct DefaultExecutor {}
 
     impl DefaultExecutor {
         pub fn new() -> DefaultExecutor {
-            DefaultExecutor {}
+            Self::default()
         }
     }
 
@@ -118,9 +114,10 @@ pub mod makerepo {
                     } => initialize_git(&first_commit_message, &path)
                         .map_err(|_| ExecutorError::GitInitializeError {}),
                 };
-                match result.is_err() {
-                    true => Some(result),
-                    false => None,
+                if result.is_err() {
+                    Some(result)
+                } else {
+                    None
                 }
             });
             match error {
@@ -137,7 +134,7 @@ pub mod makerepo {
     pub struct Config {
         service: String,
         name: Option<String>,
-        ghq_root: Option<String>,
+        ghq_root: Option<PathBuf>,
     }
 
     #[derive(Debug, Fail)]
@@ -168,13 +165,29 @@ pub mod makerepo {
                             },
                             _ => None,
                         },
-                        ghq_root: match git_config_map.get("ghq") {
-                            Some(Value::Object(g)) => match g.get("root") {
-                                Some(Value::String(root)) => Some(root.to_string()),
-                                _ => None,
-                            },
-                            _ => None,
-                        },
+                        ghq_root: git_config_map
+                            .get("ghq")
+                            .and_then(Value::as_object)
+                            .and_then(|ghq| ghq.get("root"))
+                            .and_then(|root| match root {
+                                Value::Object(_) => None,
+                                Value::String(root) => Some(root),
+                            })
+                            .map(|root| {
+                                if Path::new(root).starts_with("~") {
+                                    let home = dirs::home_dir().unwrap_or_else(|| {
+                                        unimplemented!("home directory not found")
+                                    });
+                                    Path::new(root).iter().skip(1).fold(home, |mut acc, comp| {
+                                        acc.push(comp);
+                                        acc
+                                    })
+                                } else if root.starts_with('~') {
+                                    unimplemented!("(currently) unsupported use of \"~\"");
+                                } else {
+                                    root.into()
+                                }
+                            }),
                     }),
                     Some(Value::Object(_)) => {
                         Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting {})
@@ -208,7 +221,7 @@ pub mod makerepo {
             Some(n) => n,
             None => config_authro_name.as_ref(),
         };
-        let repository_path = Path::new(&parent_path)
+        let repository_path = parent_path
             .join(service)
             .join(repository_author)
             .join(repository_name);
@@ -235,17 +248,17 @@ pub mod makerepo {
             let c = Config {
                 service: "github.com".to_string(),
                 name: Some("himanoa".to_string()),
-                ghq_root: Some("~/src".to_string()),
+                ghq_root: Some("/home/user/src".into()),
             };
             assert_eq!(
                 build_commands(c, None, None, "mkrepo", Some("Initial commit")).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
-                        path: String::from("~/src/github.com/himanoa/mkrepo")
+                        path: String::from("/home/user/src/github.com/himanoa/mkrepo")
                     },
                     CommandType::InitializeGit {
                         first_commit_message: String::from("Initial commit"),
-                        path: String::from("~/src/github.com/himanoa/mkrepo")
+                        path: String::from("/home/user/src/github.com/himanoa/mkrepo")
                     }
                 ]
             );
@@ -257,17 +270,17 @@ pub mod makerepo {
             let c = Config {
                 service: "github.com".to_string(),
                 name: Some("himanoa".to_string()),
-                ghq_root: Some("~/src".to_string()),
+                ghq_root: Some("/home/user/src".into()),
             };
             assert_eq!(
                 build_commands(c, None, None, "mkrepo", None).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
-                        path: String::from("~/src/github.com/himanoa/mkrepo")
+                        path: String::from("/home/user/src/github.com/himanoa/mkrepo")
                     },
                     CommandType::InitializeGit {
                         first_commit_message: String::from("Initial commit"),
-                        path: String::from("~/src/github.com/himanoa/mkrepo")
+                        path: String::from("/home/user/src/github.com/himanoa/mkrepo")
                     }
                 ]
             );
@@ -278,17 +291,17 @@ pub mod makerepo {
             let c = Config {
                 service: "github.com".to_string(),
                 name: Some("himanoa".to_string()),
-                ghq_root: Some("~/src".to_string()),
+                ghq_root: Some("/home/user/src".into()),
             };
             assert_eq!(
                 build_commands(c, Some("h1manoa"), None, "mkrepo", None).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
-                        path: String::from("~/src/github.com/h1manoa/mkrepo")
+                        path: String::from("/home/user/src/github.com/h1manoa/mkrepo")
                     },
                     CommandType::InitializeGit {
                         first_commit_message: String::from("Initial commit"),
-                        path: String::from("~/src/github.com/h1manoa/mkrepo")
+                        path: String::from("/home/user/src/github.com/h1manoa/mkrepo")
                     }
                 ]
             );
@@ -299,17 +312,17 @@ pub mod makerepo {
         let c = Config {
             service: "github.com".to_string(),
             name: Some("himanoa".to_string()),
-            ghq_root: Some("~/src".to_string()),
+            ghq_root: Some("/home/user/src".into()),
         };
         assert_eq!(
             build_commands(c, None, Some("bitbucket.com"), "mkrepo", None).unwrap(),
             vec![
                 CommandType::CreateDirectory {
-                    path: String::from("~/src/bitbucket.com/himanoa/mkrepo")
+                    path: String::from("/home/user/src/bitbucket.com/himanoa/mkrepo")
                 },
                 CommandType::InitializeGit {
                     first_commit_message: String::from("Initial commit"),
-                    path: String::from("~/src/bitbucket.com/himanoa/mkrepo")
+                    path: String::from("/home/user/src/bitbucket.com/himanoa/mkrepo")
                 }
             ]
         );

@@ -1,13 +1,12 @@
-extern crate clap;
 use clap::{App, Arg};
-mod lib;
-use lib::makerepo::{build_commands, load_git_config, DefaultExecutor, DryRunExecutor, Executor};
+use mkrepo::makerepo::{
+    build_commands, load_git_config, DefaultExecutor, DryRunExecutor, Executor,
+};
 use std::process::exit;
 
-const VERSION: &'static str = "0.0.1";
 fn main() {
     let matchers = App::new("Make project directory for ghq style.")
-        .version(VERSION)
+        .version(env!("CARGO_PKG_VERSION"))
         .arg(
             Arg::with_name("repository")
                 .help("Repository name")
@@ -60,7 +59,7 @@ fn main() {
         matchers.value_of("first_commit_message"),
     ) {
         Ok(commands) => {
-            if let Some(_) = matchers.value_of("dry_run") {
+            if matchers.is_present("dry_run") {
                 let executor = DryRunExecutor::new();
                 match executor.execute(commands) {
                     Ok(()) => (),
