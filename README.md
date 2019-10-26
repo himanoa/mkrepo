@@ -57,6 +57,10 @@ Date:   Fri Oct 25 05:20:10 2019 +0900
     Custom initial commit message
 ```
 
+### Author
+
+- [himanoa](https://twitter.com/h1manoa)
+
 ### LICENSE
 
 MIT
