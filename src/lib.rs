@@ -4,6 +4,7 @@ pub mod makerepo {
     use serde_derive::Deserialize;
     use std::fs::create_dir_all;
     use std::ops::Deref;
+    use std::path;
     use std::path::{Path, PathBuf};
     use std::process::Command;
 
@@ -237,10 +238,10 @@ pub mod makerepo {
 
         Ok(vec![
             CommandType::CreateDirectory {
-                path: String::from(repository_path.to_str().unwrap()),
+                path: normalize_seps(repository_path.to_str().unwrap()),
             },
             CommandType::InitializeGit {
-                path: String::from(repository_path.to_str().unwrap()),
+                path: normalize_seps(repository_path.to_str().unwrap()),
                 first_commit_message: String::from(match first_commit_message {
                     Some(x) => x,
                     None => "Initial commit",
@@ -249,6 +250,9 @@ pub mod makerepo {
         ])
     }
 
+    fn normalize_seps(path: &str) -> String {
+        path.replace(path::is_separator, &path::MAIN_SEPARATOR.to_string())
+    }
     #[cfg(test)]
     mod tests {
         use super::*;
@@ -342,10 +346,6 @@ pub mod makerepo {
                     }
                 ]
             );
-        }
-
-        fn normalize_seps(path: &str) -> String {
-            path.replace(path::is_separator, &path::MAIN_SEPARATOR.to_string())
         }
     }
 }
