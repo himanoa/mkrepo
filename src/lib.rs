@@ -257,7 +257,7 @@ pub mod makerepo {
     mod tests {
         use super::*;
 
-        use std::path;
+        
 
         #[test]
         pub fn build_commands_return_to_create_directory_and_initialize_git() {
