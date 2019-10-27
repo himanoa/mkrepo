@@ -257,8 +257,6 @@ pub mod makerepo {
     mod tests {
         use super::*;
 
-        
-
         #[test]
         pub fn build_commands_return_to_create_directory_and_initialize_git() {
             let c = Config {
