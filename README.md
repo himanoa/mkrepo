@@ -4,8 +4,19 @@ Create directory and `git init` and initial commit in imitation of [ghq](https:/
 
 ### Installation
 
-1. `cargo install mkrepo`
-2. Add ghq.root and user.name and service in your `~/.gitconfig`
+```
+cargo install mkrepo
+```
+
+### Usage
+
+`mkrepo` requires following `.gitconfig` values.
+
+- `ghq.root`
+- `mkrepo.service`
+- `mkrepo.username` or `user.name`
+
+Add these values to your `~/.gitconfig`.
 
 ```
 [user]
@@ -14,10 +25,8 @@ name="himanoa"
 root="~/src"
 [mkrepo]
 service="github.com"
+username="himanoa"
 ```
-
-
-### Usage
 
 #### Simple
 

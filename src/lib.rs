@@ -3,6 +3,7 @@ pub mod makerepo {
     use gitconfig::Value;
     use serde_derive::Deserialize;
     use std::fs::create_dir_all;
+    use std::ops::Deref;
     use std::path::{Path, PathBuf};
     use std::process::Command;
 
@@ -132,9 +133,10 @@ pub mod makerepo {
 
     #[derive(Deserialize, Debug)]
     pub struct Config {
-        service: String,
-        name: Option<String>,
+        user_name: Option<String>,
         ghq_root: Option<PathBuf>,
+        mkrepo_service: String,
+        mkrepo_username: Option<String>,
     }
 
     #[derive(Debug, Fail)]
@@ -157,8 +159,7 @@ pub mod makerepo {
             match git_config_map.get("mkrepo") {
                 Some(Value::Object(mkrepo)) => match mkrepo.get("service") {
                     Some(Value::String(service)) => Ok(Config {
-                        service: service.to_string(),
-                        name: match git_config_map.get("user") {
+                        user_name: match git_config_map.get("user") {
                             Some(Value::Object(u)) => match u.get("name") {
                                 Some(Value::String(name)) => Some(name.to_string()),
                                 _ => None,
@@ -188,6 +189,13 @@ pub mod makerepo {
                                     root.into()
                                 }
                             }),
+                        mkrepo_service: service.to_string(),
+                        mkrepo_username: mkrepo.get("username").and_then(
+                            |username| match username {
+                                Value::Object(_) => None,
+                                Value::String(username) => Some(username.clone()),
+                            },
+                        ),
                     }),
                     Some(Value::Object(_)) => {
                         Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting {})
@@ -211,16 +219,17 @@ pub mod makerepo {
         repository_name: &'a str,
         first_commit_message: Option<&'a str>,
     ) -> Result<std::vec::Vec<CommandType>, Error> {
-        let parent_path = config.ghq_root.unwrap();
-        let config_authro_name = config.name.unwrap();
+        let parent_path = config.ghq_root.as_ref().unwrap();
         let service = match service_name {
             Some(n) => n,
-            None => config.service.as_ref(),
+            None => config.mkrepo_service.as_ref(),
         };
-        let repository_author = match author {
-            Some(n) => n,
-            None => config_authro_name.as_ref(),
-        };
+        let repository_author = author
+            .or_else(|| config.mkrepo_username.as_ref().map(Deref::deref))
+            .or_else(|| config.user_name.as_ref().map(Deref::deref))
+            .unwrap_or_else(|| {
+                unimplemented!("`--author`, `mkrepo.username`, or `user.name` required")
+            });
         let repository_path = parent_path
             .join(service)
             .join(repository_author)
@@ -246,9 +255,10 @@ pub mod makerepo {
         #[test]
         pub fn build_commands_return_to_create_directory_and_initialize_git() {
             let c = Config {
-                service: "github.com".to_string(),
-                name: Some("himanoa".to_string()),
+                user_name: Some("himanoa".to_owned()),
                 ghq_root: Some("/home/user/src".into()),
+                mkrepo_service: "github.com".to_owned(),
+                mkrepo_username: None,
             };
             assert_eq!(
                 build_commands(c, None, None, "mkrepo", Some("Initial commit")).unwrap(),
@@ -268,9 +278,10 @@ pub mod makerepo {
         pub fn build_commands_return_to_create_directory_and_initialize_git_when_first_commit_message_is_none(
         ) {
             let c = Config {
-                service: "github.com".to_string(),
-                name: Some("himanoa".to_string()),
+                user_name: Some("himanoa".to_owned()),
                 ghq_root: Some("/home/user/src".into()),
+                mkrepo_service: "github.com".to_owned(),
+                mkrepo_username: None,
             };
             assert_eq!(
                 build_commands(c, None, None, "mkrepo", None).unwrap(),
@@ -289,9 +300,10 @@ pub mod makerepo {
         #[test]
         pub fn build_commands_return_to_create_directory_and_initialize_git_when_author_is_exist() {
             let c = Config {
-                service: "github.com".to_string(),
-                name: Some("himanoa".to_string()),
+                user_name: Some("himanoa".to_owned()),
                 ghq_root: Some("/home/user/src".into()),
+                mkrepo_service: "github.com".to_owned(),
+                mkrepo_username: None,
             };
             assert_eq!(
                 build_commands(c, Some("h1manoa"), None, "mkrepo", None).unwrap(),
@@ -310,9 +322,10 @@ pub mod makerepo {
     #[test]
     pub fn build_commands_return_to_create_directory_and_initialize_git_when_service_is_exist() {
         let c = Config {
-            service: "github.com".to_string(),
-            name: Some("himanoa".to_string()),
+            user_name: Some("himanoa".to_owned()),
             ghq_root: Some("/home/user/src".into()),
+            mkrepo_service: "github.com".to_owned(),
+            mkrepo_username: None,
         };
         assert_eq!(
             build_commands(c, None, Some("bitbucket.com"), "mkrepo", None).unwrap(),
