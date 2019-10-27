@@ -321,27 +321,28 @@ pub mod makerepo {
                 ]
             );
         }
-    }
-    #[test]
-    pub fn build_commands_return_to_create_directory_and_initialize_git_when_service_is_exist() {
-        let c = Config {
-            user_name: Some("himanoa".to_owned()),
-            ghq_root: Some(normalize_seps("/home/user/src").into())
-            mkrepo_service: "github.com".to_owned(),
-            mkrepo_username: None,
-        };
-        assert_eq!(
-            build_commands(c, None, Some("bitbucket.com"), "mkrepo", None).unwrap(),
-            vec![
-                CommandType::CreateDirectory {
-                    path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
-                },
-                CommandType::InitializeGit {
-                    first_commit_message: String::from("Initial commit"),
-                    path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
-                }
-            ]
-        );
+        #[test]
+        pub fn build_commands_return_to_create_directory_and_initialize_git_when_service_is_exist()
+        {
+            let c = Config {
+                user_name: Some("himanoa".to_owned()),
+                ghq_root: Some(normalize_seps("/home/user/src").into()),
+                mkrepo_service: "github.com".to_owned(),
+                mkrepo_username: None,
+            };
+            assert_eq!(
+                build_commands(c, None, Some("bitbucket.com"), "mkrepo", None).unwrap(),
+                vec![
+                    CommandType::CreateDirectory {
+                        path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
+                    },
+                    CommandType::InitializeGit {
+                        first_commit_message: String::from("Initial commit"),
+                        path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
+                    }
+                ]
+            );
+        }
 
         fn normalize_seps(path: &str) -> String {
             path.replace(path::is_separator, &path::MAIN_SEPARATOR.to_string())
