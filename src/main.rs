@@ -1,4 +1,5 @@
 use clap::{App, Arg};
+use git2::Config as GitConfig;
 use mkrepo::makerepo::{
     build_commands, load_git_config, DefaultExecutor, DryRunExecutor, Executor,
 };
@@ -43,7 +44,7 @@ fn main() {
                 .short("d"),
         )
         .get_matches();
-    let config = match load_git_config() {
+    let config = match load_git_config(GitConfig::open_default().unwrap()) {
         Ok(g) => g,
         Err(e) => {
             eprintln!("{}", e);
@@ -51,6 +52,7 @@ fn main() {
         }
     };
 
+    println!("{:?}", config);
     match build_commands(
         config,
         matchers.value_of("author"),
