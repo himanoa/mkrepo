@@ -38,13 +38,10 @@ jobs:
       matrix:
         toolchain:
         - stable-x86_64-pc-windows-msvc
-        - stable-x86_64-pc-windows-gnu
         - stable-x86_64-apple-darwin
         - stable-x86_64-unknown-linux-gnu
         include:
         - toolchain: stable-x86_64-pc-windows-msvc
-          os: windows-latest
-        - toolchain: stable-x86_64-pc-windows-gnu
           os: windows-latest
         - toolchain: stable-x86_64-apple-darwin
           os: macOS-latest
@@ -91,13 +88,10 @@ jobs:
       matrix:
         target:
         - x86_64-pc-windows-msvc
-        - x86_64-pc-windows-gnu
         - x86_64-apple-darwin
         - x86_64-unknown-linux-gnu
         include:
         - target: x86_64-pc-windows-msvc
-          os: windows-latest
-        - target: x86_64-pc-windows-gnu
           os: windows-latest
         - target: x86_64-apple-darwin
           os: macOS-latest
