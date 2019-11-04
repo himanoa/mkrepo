@@ -2,13 +2,13 @@ pub mod makerepo {
     use failure::{Error, Fail};
     use git2::Config as GitConfig;
     use git2::ConfigEntries;
-    use gitconfig::Value;
     use serde_derive::Deserialize;
+    use shellexpand::tilde;
     use std::fs::create_dir_all;
     use std::iter::Iterator;
     use std::ops::Deref;
     use std::path;
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
     use std::process::Command;
 
     #[derive(Debug, PartialEq)]
@@ -161,7 +161,7 @@ pub mod makerepo {
         }
     }
 
-    pub fn fetch_value(config: ConfigEntries, key_name: &str) -> Option<String> {
+    pub fn fetch_value(config: &ConfigEntries, key_name: &str) -> Option<String> {
         let mut matches = config.filter_map(|e| {
             if let Ok(entry) = e.as_ref() {
                 match (&entry.name(), &entry.value()) {
@@ -178,87 +178,19 @@ pub mod makerepo {
                 None
             }
         });
-        matches.nth(0)
+        matches.next()
     }
-    pub fn new_load_git_config() -> Result<Config, FailLoadGitConfigError> {
-        let config = GitConfig::open_default()?;
-        &config.entries(Some("mkrepo"))?.filter_map(|e| {
-            let entry = e.as_ref().unwrap();
-            match (&entry.name(), &entry.value()) {
-                (Some(n), Some(v)) => {
-                    if n == &"mkrepo.service_name" {
-                        Some(String::from(*v))
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            }
-        });
-        unimplemented!();
-    }
-
-    pub fn load_git_config() -> Result<Config, FailLoadGitConfigError> {
-        let command = Command::new("git")
-            .args(&["config", "--list", "--null"])
-            .output()
-            .unwrap();
-        let output = std::str::from_utf8(&command.stdout)
-            .map_err(|_| FailLoadGitConfigError::FailGitCommandExecuteError)?;
-        if let Some(git_config_map) = output.to_string().parse::<Value>().unwrap().as_object() {
-            match git_config_map.get("mkrepo") {
-                Some(Value::Object(mkrepo)) => match mkrepo.get("service") {
-                    Some(Value::String(service)) => Ok(Config {
-                        user_name: match git_config_map.get("user") {
-                            Some(Value::Object(u)) => match u.get("name") {
-                                Some(Value::String(name)) => Some(name.to_string()),
-                                _ => None,
-                            },
-                            _ => None,
-                        },
-                        ghq_root: git_config_map
-                            .get("ghq")
-                            .and_then(Value::as_object)
-                            .and_then(|ghq| ghq.get("root"))
-                            .and_then(|root| match root {
-                                Value::Object(_) => None,
-                                Value::String(root) => Some(root),
-                            })
-                            .map(|root| {
-                                if Path::new(root).starts_with("~") {
-                                    let home = dirs::home_dir().unwrap_or_else(|| {
-                                        unimplemented!("home directory not found")
-                                    });
-                                    Path::new(root).iter().skip(1).fold(home, |mut acc, comp| {
-                                        acc.push(comp);
-                                        acc
-                                    })
-                                } else if root.starts_with('~') {
-                                    unimplemented!("(currently) unsupported use of \"~\"");
-                                } else {
-                                    root.into()
-                                }
-                            }),
-                        mkrepo_service: service.to_string(),
-                        mkrepo_username: mkrepo.get("username").and_then(
-                            |username| match username {
-                                Value::Object(_) => None,
-                                Value::String(username) => Some(username.clone()),
-                            },
-                        ),
-                    }),
-                    Some(Value::Object(_)) => {
-                        Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting {})
-                    }
-                    None => {
-                        println!("foobar");
-                        Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting {})
-                    }
-                },
-                _ => Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting {}),
-            }
+    pub fn load_git_config(config: GitConfig) -> Result<Config, FailLoadGitConfigError> {
+        if let Some(service) = fetch_value(&config.entries(None)?, "mkrepo.service") {
+            Ok(Config {
+                user_name: fetch_value(&config.entries(None)?, "user.name"),
+                mkrepo_service: service,
+                mkrepo_username: fetch_value(&config.entries(None)?, "mkrepo.username"),
+                ghq_root: fetch_value(&config.entries(None)?, "ghq.root")
+                    .map(|root| PathBuf::from(tilde(&root).as_ref())),
+            })
         } else {
-            Err(FailLoadGitConfigError::ParseError {})
+            Err(FailLoadGitConfigError::NotFoundDefaultServiceSetting)
         }
     }
 
@@ -269,7 +201,7 @@ pub mod makerepo {
         repository_name: &'a str,
         first_commit_message: Option<&'a str>,
     ) -> Result<std::vec::Vec<CommandType>, Error> {
-        let parent_path = config.ghq_root.as_ref().unwrap();
+        let parent_path = config.ghq_root.as_ref().expect("ghq.root is not defined.");
         let service = match service_name {
             Some(n) => n,
             None => config.mkrepo_service.as_ref(),
@@ -403,10 +335,15 @@ pub mod makerepo {
             File::create(&path).unwrap();
             let mut c = GitConfig::open(&path).unwrap();
             assert!(c.get_str("a.foo").is_err());
-            c.set_str("a.foo", "foobar").unwrap();
+            c.set_str("a.foo", "foobar1").unwrap();
+            c.set_str("a.bar", "foobar2").unwrap();
             assert_eq!(
-                fetch_value(c.entries(None).unwrap(), "a.foo"),
-                Some(String::from("foobar"))
+                fetch_value(&c.entries(None).unwrap(), "a.foo"),
+                Some(String::from("foobar1"))
+            );
+            assert_eq!(
+                fetch_value(&c.entries(None).unwrap(), "a.bar"),
+                Some(String::from("foobar2"))
             );
         }
     }
