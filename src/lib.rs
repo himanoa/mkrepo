@@ -1,5 +1,6 @@
 pub mod makerepo {
     use failure::{Error, Fail};
+    use git2::Config as GitConfig;
     use gitconfig::Value;
     use serde_derive::Deserialize;
     use std::fs::create_dir_all;
@@ -149,6 +150,11 @@ pub mod makerepo {
         #[fail(display = "Not found default service setting")]
         NotFoundDefaultServiceSetting,
     }
+
+    pub fn new_load_git_config() -> Result<Config, FailLoadGitConfigError> {
+        unimplemented!();
+    }
+
     pub fn load_git_config() -> Result<Config, FailLoadGitConfigError> {
         let command = Command::new("git")
             .args(&["config", "--list", "--null"])
