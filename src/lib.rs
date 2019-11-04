@@ -305,6 +305,8 @@ pub mod makerepo {
     #[cfg(test)]
     mod tests {
         use super::*;
+        use std::fs::File;
+        use tempfile::TempDir;
 
         #[test]
         pub fn build_commands_return_to_create_directory_and_initialize_git() {
@@ -396,12 +398,16 @@ pub mod makerepo {
         }
         #[test]
         pub fn fetch_value_return_to_value() {
-            let mut c = GitConfig::open(Path::new(&"./dummy_gitconfig")).unwrap();
-            c.set_str("a", "foobar").unwrap();
-            // assert_eq!(
-            //     fetch_value(c.entries(None).unwrap(), "mkrepo_test.foobar"),
-            //     Some(String::from("foobar"))
-            // );
+            let td = TempDir::new().unwrap();
+            let path = td.path().join("foo");
+            File::create(&path).unwrap();
+            let mut c = GitConfig::open(&path).unwrap();
+            assert!(c.get_str("a.foo").is_err());
+            c.set_str("a.foo", "foobar").unwrap();
+            assert_eq!(
+                fetch_value(c.entries(None).unwrap(), "a.foo"),
+                Some(String::from("foobar"))
+            );
         }
     }
 }
