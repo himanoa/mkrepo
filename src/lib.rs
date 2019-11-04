@@ -1,9 +1,11 @@
 pub mod makerepo {
     use failure::{Error, Fail};
     use git2::Config as GitConfig;
+    use git2::ConfigEntries;
     use gitconfig::Value;
     use serde_derive::Deserialize;
     use std::fs::create_dir_all;
+    use std::iter::Iterator;
     use std::ops::Deref;
     use std::path;
     use std::path::{Path, PathBuf};
@@ -143,6 +145,8 @@ pub mod makerepo {
 
     #[derive(Debug, Fail)]
     pub enum FailLoadGitConfigError {
+        #[fail(display = "fail load default git config")]
+        LoadError,
         #[fail(display = "fail git config --list --null stdout parse")]
         ParseError,
         #[fail(display = "fail git command execute error")]
@@ -151,7 +155,46 @@ pub mod makerepo {
         NotFoundDefaultServiceSetting,
     }
 
+    impl std::convert::From<git2::Error> for FailLoadGitConfigError {
+        fn from(_: git2::Error) -> Self {
+            Self::LoadError {}
+        }
+    }
+
+    pub fn fetch_value(config: ConfigEntries, key_name: &str) -> Option<String> {
+        let mut matches = config.filter_map(|e| {
+            if let Ok(entry) = e.as_ref() {
+                match (&entry.name(), &entry.value()) {
+                    (Some(n), Some(v)) => {
+                        if n == &key_name {
+                            Some(String::from(*v))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                }
+            } else {
+                None
+            }
+        });
+        matches.nth(0)
+    }
     pub fn new_load_git_config() -> Result<Config, FailLoadGitConfigError> {
+        let config = GitConfig::open_default()?;
+        &config.entries(Some("mkrepo"))?.filter_map(|e| {
+            let entry = e.as_ref().unwrap();
+            match (&entry.name(), &entry.value()) {
+                (Some(n), Some(v)) => {
+                    if n == &"mkrepo.service_name" {
+                        Some(String::from(*v))
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            }
+        });
         unimplemented!();
     }
 
@@ -350,6 +393,15 @@ pub mod makerepo {
                     }
                 ]
             );
+        }
+        #[test]
+        pub fn fetch_value_return_to_value() {
+            let mut c = GitConfig::open(Path::new(&"./dummy_gitconfig")).unwrap();
+            c.set_str("a", "foobar").unwrap();
+            // assert_eq!(
+            //     fetch_value(c.entries(None).unwrap(), "mkrepo_test.foobar"),
+            //     Some(String::from("foobar"))
+            // );
         }
     }
 }
