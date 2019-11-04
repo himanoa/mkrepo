@@ -52,7 +52,6 @@ fn main() {
         }
     };
 
-    println!("{:?}", config);
     match build_commands(
         config,
         matchers.value_of("author"),
