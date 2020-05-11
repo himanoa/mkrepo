@@ -43,6 +43,13 @@ fn main() {
                 .required(false)
                 .short("d"),
         )
+        .arg(
+            Arg::with_name("project_name")
+                .help("The name of the project template to be expanded")
+                .required(false)
+                .takes_value(true)
+                .short("p"),
+        )
         .get_matches();
     let config = match load_git_config(GitConfig::open_default().unwrap()) {
         Ok(g) => g,
@@ -58,6 +65,7 @@ fn main() {
         matchers.value_of("service"),
         matchers.value_of("repository").unwrap(),
         matchers.value_of("first_commit_message"),
+        matchers.value_of("project_name"),
     ) {
         Ok(commands) => {
             if matchers.is_present("dry_run") {

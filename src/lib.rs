@@ -20,6 +20,10 @@ pub mod makerepo {
             first_commit_message: String,
             path: String,
         },
+        ExpandProjectTemplate {
+            template_name: String,
+            path: String,
+        },
     }
 
     pub trait Executor {
@@ -44,12 +48,16 @@ pub mod makerepo {
                         first_commit_message,
                         path,
                     } => println!("InitializeGit: {} {}", first_commit_message, path),
+                    CommandType::ExpandProjectTemplate { template_name, path } => println!("ExpandProjectTemplate: {} {}", template_name, path),
                 }
             }
             Ok(())
         }
     }
 
+    pub fn expand_project_template(path: &str, project_name: &str) -> Result<(), std::io::Error> {
+        unimplemented!("not supported future: expand_project_template");
+    }
     pub fn create_directory(path: &str) -> Result<(), std::io::Error> {
         create_dir_all(path)
     }
@@ -105,6 +113,8 @@ pub mod makerepo {
         CreateDirectroyError,
         #[fail(display = "fail initialize git repository")]
         GitInitializeError,
+        #[fail(display = "fail expand_project_template")]
+        ExpandProjectTempalteError,
     }
     impl Executor for DefaultExecutor {
         fn execute(&self, commands: Vec<CommandType>) -> Result<(), ExecutorError> {
@@ -118,6 +128,7 @@ pub mod makerepo {
                         path,
                     } => initialize_git(&first_commit_message, &path)
                         .map_err(|_| ExecutorError::GitInitializeError {}),
+                    CommandType::ExpandProjectTemplate { path, template_name }  => expand_project_template(&path, &template_name).map_err(|_| ExecutorError::ExpandProjectTempalteError),
                 };
                 if result.is_err() {
                     Some(result)
@@ -200,6 +211,7 @@ pub mod makerepo {
         service_name: Option<&'a str>,
         repository_name: &'a str,
         first_commit_message: Option<&'a str>,
+        project_name: Option<&'a str>,
     ) -> Result<std::vec::Vec<CommandType>, Error> {
         let parent_path = config.ghq_root.as_ref().expect("ghq.root is not defined.");
         let service = match service_name {
@@ -217,7 +229,7 @@ pub mod makerepo {
             .join(repository_author)
             .join(repository_name);
 
-        Ok(vec![
+        let mut commands = vec![
             CommandType::CreateDirectory {
                 path: normalize_seps(repository_path.to_str().unwrap()),
             },
@@ -228,7 +240,12 @@ pub mod makerepo {
                     None => "Initial commit",
                 }),
             },
-        ])
+        ];
+
+        if project_name.is_some() {
+            commands.push(CommandType::ExpandProjectTemplate { path: normalize_seps(repository_path.to_str().unwrap()), template_name: project_name.unwrap().to_string() })
+        }
+        Ok(commands)
     }
 
     fn normalize_seps(path: &str) -> String {
@@ -249,7 +266,7 @@ pub mod makerepo {
                 mkrepo_username: None,
             };
             assert_eq!(
-                build_commands(c, None, None, "mkrepo", Some("Initial commit")).unwrap(),
+                build_commands(c, None, None, "mkrepo", Some("Initial commit"), None).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
                         path: normalize_seps("/home/user/src/github.com/himanoa/mkrepo")
@@ -272,7 +289,7 @@ pub mod makerepo {
                 mkrepo_username: None,
             };
             assert_eq!(
-                build_commands(c, None, None, "mkrepo", None).unwrap(),
+                build_commands(c, None, None, "mkrepo", None, None).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
                         path: normalize_seps("/home/user/src/github.com/himanoa/mkrepo")
@@ -294,7 +311,7 @@ pub mod makerepo {
                 mkrepo_username: None,
             };
             assert_eq!(
-                build_commands(c, Some("h1manoa"), None, "mkrepo", None).unwrap(),
+                build_commands(c, Some("h1manoa"), None, "mkrepo", None, None).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
                         path: normalize_seps("/home/user/src/github.com/h1manoa/mkrepo")
@@ -316,13 +333,40 @@ pub mod makerepo {
                 mkrepo_username: None,
             };
             assert_eq!(
-                build_commands(c, None, Some("bitbucket.com"), "mkrepo", None).unwrap(),
+                build_commands(c, None, Some("bitbucket.com"), "mkrepo", None, None).unwrap(),
                 vec![
                     CommandType::CreateDirectory {
                         path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
                     },
                     CommandType::InitializeGit {
                         first_commit_message: String::from("Initial commit"),
+                        path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
+                    }
+                ]
+            );
+        }
+
+        #[test]
+        pub fn build_commands_return_to_create_directory_and_initialize_git_when_service_and_expand_project_template_is_exist()
+        {
+            let c = Config {
+                user_name: Some("himanoa".to_owned()),
+                ghq_root: Some(normalize_seps("/home/user/src").into()),
+                mkrepo_service: "github.com".to_owned(),
+                mkrepo_username: None,
+            };
+            assert_eq!(
+                build_commands(c, None, Some("bitbucket.com"), "mkrepo", None, Some("typescript")).unwrap(),
+                vec![
+                    CommandType::CreateDirectory {
+                        path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
+                    },
+                    CommandType::InitializeGit {
+                        first_commit_message: String::from("Initial commit"),
+                        path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
+                    },
+                    CommandType::ExpandProjectTemplate {
+                        template_name: String::from("typescript"),
                         path: normalize_seps("/home/user/src/bitbucket.com/himanoa/mkrepo")
                     }
                 ]
