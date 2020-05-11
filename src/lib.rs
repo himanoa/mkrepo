@@ -9,6 +9,9 @@ pub mod makerepo {
     use std::ops::Deref;
     use std::path;
     use std::path::PathBuf;
+    use std::fs::File;
+    use flate2::read::GzDecoder;
+    use tar::Archive;
     use std::process::Command;
 
     #[derive(Debug, PartialEq)]
@@ -56,7 +59,13 @@ pub mod makerepo {
     }
 
     pub fn expand_project_template(path: &str, project_name: &str) -> Result<(), std::io::Error> {
-        unimplemented!("not supported future: expand_project_template");
+        let archive_path = normalize_seps(format!("~/.mkrepo/{}.tar.gz", project_name).as_ref());
+
+        let tar_gz = File::open(archive_path)?;
+        let tar = GzDecoder::new(tar_gz);
+        let mut archive = Archive::new(tar);
+        archive.unpack(path)?;
+        Ok(())
     }
     pub fn create_directory(path: &str) -> Result<(), std::io::Error> {
         create_dir_all(path)
