@@ -59,12 +59,16 @@ pub mod makerepo {
     }
 
     pub fn expand_project_template(path: &str, project_name: &str) -> Result<(), std::io::Error> {
-        let archive_path = normalize_seps(format!("~/.mkrepo/{}.tar.gz", project_name).as_ref());
+        let p = format!("~/.mkrepo/{}.tar.gz", project_name);
+        let archive_path = PathBuf::from(tilde(&p).as_ref());
 
         let tar_gz = File::open(archive_path)?;
         let tar = GzDecoder::new(tar_gz);
         let mut archive = Archive::new(tar);
-        archive.unpack(path)?;
+        for (_i, file) in archive.entries().unwrap().enumerate() {
+            let mut file = file.unwrap();
+            file.unpack(path).unwrap();
+        }
         Ok(())
     }
     pub fn create_directory(path: &str) -> Result<(), std::io::Error> {
@@ -252,8 +256,14 @@ pub mod makerepo {
         ];
 
         if project_name.is_some() {
-            commands.push(CommandType::ExpandProjectTemplate { path: normalize_seps(repository_path.to_str().unwrap()), template_name: project_name.unwrap().to_string() })
+            commands.push(
+                CommandType::ExpandProjectTemplate {
+                    path: normalize_seps(repository_path.to_str().unwrap()),
+                    template_name: project_name.unwrap().to_string()
+                }
+            )
         }
+
         Ok(commands)
     }
 
